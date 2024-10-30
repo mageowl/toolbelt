@@ -68,6 +68,7 @@ fn main() -> io::Result<()> {
     start_resize_thread(sender.clone());
     start_key_thread(sender);
 
+    let mut cmd = None;
     for event in receiver {
         match event {
             Event::Key(Key::Esc) => break,
@@ -75,12 +76,20 @@ fn main() -> io::Result<()> {
                 Instruction::None => (),
                 Instruction::Quit => break,
                 Instruction::SetApp(new_app) => app = new_app,
+                Instruction::HoldOutput(command) => {
+                    cmd = Some(command);
+                    break;
+                }
             },
 
             Event::Resize(w, h) => app.handle_resize(w, h),
         }
 
         app.draw(&mut terminal)?;
+    }
+
+    if let Some(mut child) = cmd {
+        let _ = child.wait();
     }
 
     process::exit(0);

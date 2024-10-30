@@ -1,5 +1,5 @@
 use std::{
-    io::{self, Stdout},
+    io::{self, Stdout, Write},
     process::Command,
 };
 
@@ -32,8 +32,7 @@ impl App for PromptApp {
         }
 
         terminal.move_cursor(self.input.len() + 4, 1)?;
-
-        Ok(())
+        terminal.flush()
     }
 
     fn handle_input(&mut self, key: Key) -> Instruction {
@@ -62,8 +61,7 @@ impl App for PromptApp {
                             .spawn()
                             .expect("failed to launch command");
                         if *hold_output {
-                            //Instruction::SetApp(Box::new(OutputApp::new(child)))
-                            Instruction::Quit
+                            Instruction::SetApp(Box::new(OutputApp::new(child.stdout.unwrap())))
                         } else {
                             let _ = child.wait();
                             Instruction::Quit

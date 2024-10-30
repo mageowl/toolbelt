@@ -1,5 +1,5 @@
 use std::{
-    io::{self, Stdout, Write},
+    io::{self, stderr, stdout, Stdout, Write},
     process::Command,
 };
 
@@ -8,11 +8,11 @@ use termion::{event::Key, raw::RawTerminal};
 use crate::{
     config::{Action, Config, Entry},
     output::Output,
-    style::{Style, Styled},
+    style::{Color, Style, Styled},
     App,
 };
 
-use super::Instruction;
+use super::{message::MessageApp, Instruction};
 
 pub struct ListApp {
     pub(super) entries: Vec<Entry>,
@@ -99,9 +99,11 @@ impl App for ListApp {
                             .args(["dispatch", "exec"])
                             .arg(name)
                             .output();
-                        if let Err(_err) = output {
-                            //Instruction::SetApp(Box::new(MessageApp::new(format!("{err}"))))
-                            Instruction::Quit
+                        if let Err(err) = output {
+                            let mut msg = Styled::from(format!("{err}"));
+                            msg.style.fg = Color::Red;
+
+                            Instruction::SetApp(Box::new(MessageApp(msg)))
                         } else {
                             Instruction::Quit
                         }
@@ -111,15 +113,15 @@ impl App for ListApp {
                         args,
                         hold_output,
                     } => {
-                        let mut child = Command::new(cmd)
-                            .args(args)
-                            .spawn()
-                            .expect("failed to launch command");
+                        let mut command = Command::new(cmd);
+                        command.args(args);
                         if *hold_output {
-                            //Instruction::SetApp(Box::new(OutputApp::new(child)))
-                            Instruction::Quit
+                            command.stdout(stdout()).stderr(stderr());
+                            Instruction::HoldOutput(
+                                command.spawn().expect("failed to launch command"),
+                            )
                         } else {
-                            let _ = child.wait();
+                            let _ = command.output();
                             Instruction::Quit
                         }
                     }

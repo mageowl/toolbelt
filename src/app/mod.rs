@@ -1,8 +1,6 @@
 use std::{
     io::{self, Stdout},
-    process::Command,
-    thread,
-    time::Duration,
+    process::{Child, Command},
 };
 
 use list::ListApp;
@@ -15,6 +13,7 @@ use crate::{
 };
 
 pub mod list;
+pub mod message;
 pub mod prompt;
 
 pub trait App {
@@ -27,6 +26,7 @@ pub enum Instruction {
     None,
     Quit,
     SetApp(Box<dyn App>),
+    HoldOutput(Child),
 }
 
 pub fn from_config(config: Config) -> Box<dyn App> {
