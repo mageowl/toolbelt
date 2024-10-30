@@ -1,6 +1,8 @@
 use std::{
     io::{self, stderr, stdout, Stdout, Write},
     process::Command,
+    thread,
+    time::Duration,
 };
 
 use termion::{event::Key, raw::RawTerminal};
@@ -70,6 +72,7 @@ impl App for PromptApp {
                                     ])
                                     .output()
                                     .expect("failed to resize window");
+                                thread::sleep(Duration::from_millis(100));
                             }
 
                             command.stdout(stdout()).stderr(stderr());

@@ -1,6 +1,6 @@
 use std::{
     io::{self, Stdout},
-    process::{Child, Command},
+    process::Command,
 };
 
 use list::ListApp;
