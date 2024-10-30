@@ -6,6 +6,7 @@ use std::{
     thread::{self, JoinHandle},
 };
 
+use output::Output;
 use signal_hook::iterator::Signals;
 use termion::{event::Key, input::TermRead, raw::IntoRawMode, terminal_size};
 
@@ -69,7 +70,7 @@ fn main() -> io::Result<()> {
     start_key_thread(sender);
 
     let mut cmd = None;
-    for event in receiver {
+    for event in &receiver {
         match event {
             Event::Key(Key::Esc) => break,
             Event::Key(key) => match app.handle_input(key) {
@@ -77,6 +78,11 @@ fn main() -> io::Result<()> {
                 Instruction::Quit => break,
                 Instruction::SetApp(new_app) => app = new_app,
                 Instruction::HoldOutput(command) => {
+                    terminal.clear()?;
+                    terminal.move_cursor(1, 1)?;
+                    terminal.flush()?;
+                    drop(terminal);
+
                     cmd = Some(command);
                     break;
                 }
@@ -89,7 +95,18 @@ fn main() -> io::Result<()> {
     }
 
     if let Some(mut child) = cmd {
-        let _ = child.wait();
+        let res = child.wait();
+        let mut temp = stdout().into_raw_mode()?;
+
+        temp.print("\n")?;
+        let code = res.expect("failed to get exit code.");
+        if !code.success() {
+            temp.print(format!("Process exited with code {code}.\n"))?;
+        }
+
+        temp.print("Press any key to exit.")?;
+        temp.flush()?;
+        let _ = receiver.recv();
     }
 
     process::exit(0);

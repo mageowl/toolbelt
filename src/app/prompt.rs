@@ -1,5 +1,5 @@
 use std::{
-    io::{self, Stdout, Write},
+    io::{self, stderr, stdout, Stdout, Write},
     process::Command,
 };
 
@@ -56,14 +56,15 @@ impl App for PromptApp {
                         args,
                         hold_output,
                     } => {
-                        let mut child = Command::new(cmd)
-                            .args(args)
-                            .spawn()
-                            .expect("failed to launch command");
+                        let mut command = Command::new(cmd);
+                        command.args(args);
                         if *hold_output {
-                            Instruction::SetApp(Box::new(OutputApp::new(child.stdout.unwrap())))
+                            command.stdout(stdout()).stderr(stderr());
+                            Instruction::HoldOutput(
+                                command.spawn().expect("failed to launch command"),
+                            )
                         } else {
-                            let _ = child.wait();
+                            let _ = command.output();
                             Instruction::Quit
                         }
                     }
