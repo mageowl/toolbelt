@@ -72,11 +72,13 @@ pub struct Entry {
 #[serde(rename_all = "camelCase")]
 pub enum Action {
     Exec(String),
+    #[serde(rename_all = "camelCase")]
     Command {
-        cmd: String,
+        name: String,
         args: Vec<String>,
         #[serde(default)]
         hold_output: bool,
+        output_size: Option<(usize, usize)>,
     },
     OpenMenu(String),
 }

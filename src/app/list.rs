@@ -109,17 +109,26 @@ impl App for ListApp {
                         }
                     }
                     Action::Command {
-                        cmd,
+                        name,
                         args,
                         hold_output,
+                        output_size,
                     } => {
-                        let mut command = Command::new(cmd);
+                        let mut command = Command::new(name);
                         command.args(args);
                         if *hold_output {
+                            if let Some((w, h)) = output_size {
+                                Command::new("hyprctl")
+                                    .args([
+                                        "--batch",
+                                        &format!("dispatch resizeactive exact {w} {h}; dispatch centerwindow"),
+                                    ])
+                                    .output()
+                                    .expect("failed to resize window");
+                            }
+
                             command.stdout(stdout()).stderr(stderr());
-                            Instruction::HoldOutput(
-                                command.spawn().expect("failed to launch command"),
-                            )
+                            Instruction::HoldOutput(command)
                         } else {
                             let _ = command.output();
                             Instruction::Quit

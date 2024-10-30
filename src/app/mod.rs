@@ -26,7 +26,7 @@ pub enum Instruction {
     None,
     Quit,
     SetApp(Box<dyn App>),
-    HoldOutput(Child),
+    HoldOutput(Command),
 }
 
 pub fn from_config(config: Config) -> Box<dyn App> {
@@ -34,7 +34,7 @@ pub fn from_config(config: Config) -> Box<dyn App> {
         Command::new("hyprctl")
             .args([
                 "--batch",
-                &format!("dispatch resizeactive {w} {h}; dispatch centerwindow"),
+                &format!("dispatch resizeactive exact {w} {h}; dispatch centerwindow"),
             ])
             .output()
             .expect("failed to resize window");

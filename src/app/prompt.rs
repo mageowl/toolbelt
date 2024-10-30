@@ -23,6 +23,8 @@ pub struct PromptApp {
 
 impl App for PromptApp {
     fn draw(&self, terminal: &mut RawTerminal<Stdout>) -> io::Result<()> {
+        terminal.clear()?;
+
         terminal.print(&self.icon)?;
         terminal.print("  ")?;
         if self.input.is_empty() {
@@ -52,17 +54,26 @@ impl App for PromptApp {
                         }
                     }
                     Action::Command {
-                        cmd,
+                        name,
                         args,
                         hold_output,
+                        output_size,
                     } => {
-                        let mut command = Command::new(cmd);
-                        command.args(args);
+                        let mut command = Command::new(name);
+                        command.args(args.into_iter().map(|s| s.replace("{input}", &self.input)));
                         if *hold_output {
+                            if let Some((w, h)) = output_size {
+                                Command::new("hyprctl")
+                                    .args([
+                                        "--batch",
+                                        &format!("dispatch resizeactive exact {w} {h}; dispatch centerwindow"),
+                                    ])
+                                    .output()
+                                    .expect("failed to resize window");
+                            }
+
                             command.stdout(stdout()).stderr(stderr());
-                            Instruction::HoldOutput(
-                                command.spawn().expect("failed to launch command"),
-                            )
+                            Instruction::HoldOutput(command)
                         } else {
                             let _ = command.output();
                             Instruction::Quit

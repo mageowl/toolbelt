@@ -77,13 +77,13 @@ fn main() -> io::Result<()> {
                 Instruction::None => (),
                 Instruction::Quit => break,
                 Instruction::SetApp(new_app) => app = new_app,
-                Instruction::HoldOutput(command) => {
+                Instruction::HoldOutput(mut command) => {
                     terminal.clear()?;
                     terminal.move_cursor(1, 1)?;
                     terminal.flush()?;
                     drop(terminal);
 
-                    cmd = Some(command);
+                    cmd = Some(command.spawn().expect("failed to spawn"));
                     break;
                 }
             },
@@ -106,7 +106,7 @@ fn main() -> io::Result<()> {
 
         temp.print("Press any key to exit.")?;
         temp.flush()?;
-        let _ = receiver.recv();
+        while let Ok(Event::Resize(_, _)) | Err(_) = receiver.recv() {}
     }
 
     process::exit(0);
