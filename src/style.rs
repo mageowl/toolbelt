@@ -19,7 +19,7 @@ pub enum Color {
 }
 
 impl Color {
-    fn code(self) -> u8 {
+    pub fn code(self) -> u8 {
         match self {
             Color::Default => 9,
             Color::Black => 0,
@@ -34,41 +34,19 @@ impl Color {
     }
 }
 
-#[derive(Deserialize)]
-pub struct Styled {
-    text: String,
+#[derive(Deserialize, Default)]
+#[serde(default)]
+pub struct Style {
+    pub fg: Color,
+    pub bg: Color,
 
-    #[serde(default)]
-    fg: Color,
-    #[serde(default)]
-    bg: Color,
-
-    #[serde(default)]
-    dim: bool,
-    #[serde(default)]
-    bold: bool,
-    #[serde(default)]
-    italic: bool,
-    #[serde(default)]
-    underline: bool,
+    pub dim: bool,
+    pub bold: bool,
+    pub italic: bool,
+    pub underline: bool,
 }
 
-impl From<String> for Styled {
-    fn from(value: String) -> Self {
-        Self {
-            text: value,
-
-            fg: Color::Default,
-            bg: Color::Default,
-            dim: false,
-            bold: false,
-            italic: false,
-            underline: false,
-        }
-    }
-}
-
-impl Display for Styled {
+impl Display for Style {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut code = Vec::new();
 
@@ -93,50 +71,35 @@ impl Display for Styled {
 
         let code: Vec<_> = code.iter().map(ToString::to_string).collect();
 
+        write!(f, "\x1b[{code}m", code = code.join(";"))
+    }
+}
+
+#[derive(Deserialize)]
+pub struct Styled {
+    pub text: String,
+
+    #[serde(flatten)]
+    pub style: Style,
+}
+
+impl From<String> for Styled {
+    fn from(value: String) -> Self {
+        Self {
+            text: value,
+            style: Style::default(),
+        }
+    }
+}
+
+impl Display for Styled {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "\x1b[{code}m{inner}\x1b[0m",
-            inner = self.text,
-            code = code.join(";")
+            "{style}{text}\x1b[0m",
+            style = self.style,
+            text = self.text
         )
-    }
-}
-
-pub trait Style: Display {
-    fn fg(self, color: Color) -> Styled;
-    fn bg(self, color: Color) -> Styled;
-
-    fn dim(self) -> Styled;
-    fn bold(self) -> Styled;
-    fn italic(self) -> Styled;
-    fn underline(self) -> Styled;
-}
-
-impl Style for Styled {
-    fn fg(mut self, color: Color) -> Styled {
-        self.fg = color;
-        self
-    }
-    fn bg(mut self, color: Color) -> Styled {
-        self.bg = color;
-        self
-    }
-
-    fn dim(mut self) -> Styled {
-        self.dim = true;
-        self
-    }
-    fn bold(mut self) -> Styled {
-        self.bold = true;
-        self
-    }
-    fn italic(mut self) -> Styled {
-        self.italic = true;
-        self
-    }
-    fn underline(mut self) -> Styled {
-        self.underline = true;
-        self
     }
 }
 
@@ -145,30 +108,5 @@ impl Deref for Styled {
 
     fn deref(&self) -> &Self::Target {
         &self.text
-    }
-}
-
-impl<T> Style for T
-where
-    T: Into<String> + Display,
-{
-    fn fg(self, color: Color) -> Styled {
-        Styled::from(self.into()).fg(color)
-    }
-    fn bg(self, color: Color) -> Styled {
-        Styled::from(self.into()).bg(color)
-    }
-
-    fn dim(self) -> Styled {
-        Styled::from(self.into()).dim()
-    }
-    fn bold(self) -> Styled {
-        Styled::from(self.into()).bold()
-    }
-    fn italic(self) -> Styled {
-        Styled::from(self.into()).italic()
-    }
-    fn underline(self) -> Styled {
-        Styled::from(self.into()).underline()
     }
 }

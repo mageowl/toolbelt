@@ -2,23 +2,17 @@ use std::{env, fs, path::PathBuf};
 
 use serde::Deserialize;
 
-use crate::style::Styled;
+use crate::style::{Style, Styled};
 
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Config {
-    pub prompt: Styled,
-    pub icon: Styled,
+    pub prompt: Text,
+    pub icon: Text,
+    pub window_size: Option<(usize, usize)>,
 
-    pub entries: Option<Vec<Entry>>,
-}
-
-impl From<DeserializedCfg> for Config {
-    fn from(value: DeserializedCfg) -> Self {
-        Self {
-            prompt: value.prompt.into(),
-            icon: value.icon.into(),
-            entries: value.entries,
-        }
-    }
+    #[serde(flatten)]
+    pub menu: MenuConfig,
 }
 
 impl Config {
@@ -27,24 +21,30 @@ impl Config {
             PathBuf::from(env::var_os("HOME").expect("failed to get home directory"));
         menu_path.push(".config/toolbelt/");
         menu_path.push(name + ".json");
-        dbg!(&menu_path);
 
         let file = fs::read_to_string(menu_path).expect("failed to open config file");
-        let cfg: DeserializedCfg = serde_json::from_str(&file).expect("failed to parse config");
-        cfg.into()
+        serde_json::from_str(&file).expect("failed to parse config")
     }
 }
 
 #[derive(Deserialize)]
-struct DeserializedCfg {
-    prompt: Text,
-    icon: Text,
-    entries: Option<Vec<Entry>>,
+#[serde(tag = "type", rename_all = "camelCase")]
+pub enum MenuConfig {
+    #[serde(rename_all = "camelCase")]
+    List {
+        entries: Vec<Entry>,
+        #[serde(default)]
+        selected_style: Style,
+    },
+    Prompt {
+        #[serde(flatten)]
+        action: Action,
+    },
 }
 
 #[derive(Deserialize)]
 #[serde(untagged)]
-enum Text {
+pub enum Text {
     Unstyled(String),
     Styled(Styled),
 }
@@ -64,13 +64,19 @@ pub struct Entry {
     pub icon: String,
     pub keywords: Option<String>,
 
+    #[serde(flatten)]
     pub action: Action,
 }
 
 #[derive(Deserialize)]
-#[serde(tag = "type", rename_all = "lowercase")]
+#[serde(rename_all = "camelCase")]
 pub enum Action {
-    Exec {},
-    #[serde(rename = "sh")]
-    Command {},
+    Exec(String),
+    Command {
+        cmd: String,
+        args: Vec<String>,
+        #[serde(default)]
+        hold_output: bool,
+    },
+    OpenMenu(String),
 }
