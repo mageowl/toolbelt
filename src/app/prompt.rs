@@ -17,6 +17,7 @@ use super::{message::MessageApp, App, Instruction};
 
 pub struct PromptApp {
     pub(super) input: String,
+    pub(super) cursor_index: usize,
 
     pub(super) placeholder: Styled,
     pub(super) icon: Styled,
@@ -36,9 +37,9 @@ impl App for PromptApp {
             let prompt_offset = self.width / 2 - msg_width / 2;
             terminal.print(" ".repeat(prompt_offset))?;
 
-            self.input.len() + prompt_offset + 3
+            self.cursor_index + prompt_offset + 3
         } else {
-            self.input.len() + 3
+            self.cursor_index + 3
         };
 
         terminal.print(&self.icon)?;
@@ -118,6 +119,7 @@ impl App for PromptApp {
                             vec.push((size, str));
 
                             self.input = String::new();
+                            self.cursor_index = 0;
                             Instruction::None
                         } else {
                             Instruction::Quit
@@ -130,11 +132,28 @@ impl App for PromptApp {
             },
 
             Key::Backspace => {
-                self.input.pop();
+                if self.cursor_index > 0 {
+                    self.input.remove(self.cursor_index - 1);
+                    self.cursor_index -= 1;
+                }
                 Instruction::None
             }
             Key::Char(ch) => {
-                self.input.push(ch);
+                self.input.insert(self.cursor_index, ch);
+                self.cursor_index += 1;
+                Instruction::None
+            }
+
+            Key::Left => {
+                if self.cursor_index > 0 {
+                    self.cursor_index -= 1;
+                }
+                Instruction::None
+            }
+            Key::Right => {
+                if self.cursor_index < self.input.len() {
+                    self.cursor_index += 1;
+                }
                 Instruction::None
             }
 

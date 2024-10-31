@@ -67,6 +67,7 @@ pub fn from_config(config: Config) -> Box<dyn App> {
 
             history: if history { Some(Vec::new()) } else { None },
             input: String::new(),
+            cursor_index: 0,
 
             width: size.0 as usize,
             height: size.1 as usize,
