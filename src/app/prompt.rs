@@ -13,7 +13,7 @@ use crate::{
     style::Styled,
 };
 
-use super::{App, Instruction};
+use super::{message::MessageApp, App, Instruction};
 
 pub struct PromptApp {
     pub(super) input: String,
@@ -41,52 +41,49 @@ impl App for PromptApp {
 
     fn handle_input(&mut self, key: Key) -> Instruction {
         match key {
-            Key::Char('\n') => {
-                match &self.action {
-                    Action::Exec(name) => {
-                        let output = Command::new("hyprctl")
-                            .args(["dispatch", "exec"])
-                            .arg(name)
-                            .output();
-                        if let Err(_err) = output {
-                            //Instruction::SetApp(Box::new(MessageApp::new(format!("{err}"))))
-                            Instruction::Quit
-                        } else {
-                            Instruction::Quit
-                        }
+            Key::Char('\n') => match &self.action {
+                Action::Exec(name) => {
+                    let output = Command::new("hyprctl")
+                        .args(["dispatch", "exec"])
+                        .arg(name)
+                        .output();
+                    if let Err(err) = output {
+                        Instruction::SetApp(Box::new(MessageApp(format!("{err}").into())))
+                    } else {
+                        Instruction::Quit
                     }
-                    Action::Command {
-                        name,
-                        args,
-                        hold_output,
-                        output_size,
-                    } => {
-                        let mut command = Command::new(name);
-                        command.args(args.into_iter().map(|s| s.replace("{input}", &self.input)));
-                        if *hold_output {
-                            if let Some((w, h)) = output_size {
-                                Command::new("hyprctl")
+                }
+                Action::Command {
+                    name,
+                    args,
+                    hold_output,
+                    output_size,
+                } => {
+                    let mut command = Command::new(name);
+                    command.args(args.into_iter().map(|s| s.replace("{input}", &self.input)));
+                    if *hold_output {
+                        if let Some((w, h)) = output_size {
+                            Command::new("hyprctl")
                                     .args([
                                         "--batch",
                                         &format!("dispatch resizeactive exact {w} {h}; dispatch centerwindow"),
                                     ])
                                     .output()
                                     .expect("failed to resize window");
-                                thread::sleep(Duration::from_millis(100));
-                            }
-
-                            command.stdout(stdout()).stderr(stderr());
-                            Instruction::HoldOutput(command)
-                        } else {
-                            let _ = command.output();
-                            Instruction::Quit
+                            thread::sleep(Duration::from_millis(100));
                         }
-                    }
-                    Action::OpenMenu(name) => {
-                        Instruction::SetApp(super::from_config(Config::get_menu(name.to_string())))
+
+                        command.stdout(stdout()).stderr(stderr());
+                        Instruction::HoldOutput(command)
+                    } else {
+                        let _ = command.output();
+                        Instruction::Quit
                     }
                 }
-            }
+                Action::OpenMenu(name) => {
+                    Instruction::SetApp(super::from_config(Config::get_menu(name.to_string())))
+                }
+            },
 
             Key::Backspace => {
                 self.input.pop();
