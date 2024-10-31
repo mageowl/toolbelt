@@ -21,7 +21,7 @@ pub struct PromptApp {
     pub(super) placeholder: Styled,
     pub(super) icon: Styled,
     pub(super) action: Action,
-    pub(super) history: Option<Vec<String>>,
+    pub(super) history: Option<Vec<(usize, String)>>,
 
     pub(super) width: usize,
     pub(super) height: usize,
@@ -55,10 +55,13 @@ impl App for PromptApp {
             terminal.print("─".repeat(self.width))?;
             terminal.print("\x1b[0m")?;
 
-            for (i, entry) in vec.iter().rev().take(self.height - 2).enumerate() {
-                terminal.move_cursor(1, i + 3)?;
+            let mut ln = 0;
+            for (size, entry) in vec.iter().rev().take(self.height - 2) {
+                terminal.move_cursor(1, ln + 3)?;
                 terminal.print(" ")?;
                 terminal.print(&entry)?;
+
+                ln += size;
             }
         }
 
@@ -105,13 +108,14 @@ impl App for PromptApp {
                     } else {
                         let out = command.output();
                         if let Some(vec) = &mut self.history {
-                            vec.push(
-                                match out {
-                                    Ok(out) => String::from_utf8_lossy(&out.stdout).to_string(),
-                                    Err(err) => err.to_string(),
-                                }
-                                .replace("\n", "\n\r "),
-                            );
+                            let str = match out {
+                                Ok(out) => String::from_utf8_lossy(&out.stdout).to_string(),
+                                Err(err) => err.to_string(),
+                            }
+                            .replace("\n", "\n\r ");
+                            let size = str.matches("\n").count();
+
+                            vec.push((size, str));
 
                             self.input = String::new();
                             Instruction::None
