@@ -39,6 +39,8 @@ pub enum MenuConfig {
     Prompt {
         #[serde(flatten)]
         action: Action,
+        #[serde(default)]
+        history: bool,
     },
 }
 

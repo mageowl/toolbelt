@@ -60,11 +60,16 @@ pub fn from_config(config: Config) -> Box<dyn App> {
             width: size.0 as usize,
             height: size.1 as usize,
         }),
-        MenuConfig::Prompt { action } => Box::new(PromptApp {
+        MenuConfig::Prompt { action, history } => Box::new(PromptApp {
             action,
-            input: String::new(),
             placeholder: Styled::from(config.prompt),
             icon: config.icon.into(),
+
+            history: if history { Some(Vec::new()) } else { None },
+            input: String::new(),
+
+            width: size.0 as usize,
+            height: size.1 as usize,
         }),
     }
 }

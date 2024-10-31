@@ -21,21 +21,48 @@ pub struct PromptApp {
     pub(super) placeholder: Styled,
     pub(super) icon: Styled,
     pub(super) action: Action,
+    pub(super) history: Option<Vec<String>>,
+
+    pub(super) width: usize,
+    pub(super) height: usize,
 }
 
 impl App for PromptApp {
     fn draw(&self, terminal: &mut RawTerminal<Stdout>) -> io::Result<()> {
         terminal.clear()?;
 
+        let cursor_pos = if self.history.is_some() {
+            let msg_width = self.placeholder.len() + 2;
+            let prompt_offset = self.width / 2 - msg_width / 2;
+            terminal.print(" ".repeat(prompt_offset))?;
+
+            self.input.len() + prompt_offset + 3
+        } else {
+            self.input.len() + 3
+        };
+
         terminal.print(&self.icon)?;
-        terminal.print("  ")?;
+        terminal.print(" ")?;
         if self.input.is_empty() {
             terminal.print(&self.placeholder)?;
         } else {
             terminal.print(&self.input)?;
         }
 
-        terminal.move_cursor(self.input.len() + 4, 1)?;
+        if let Some(vec) = &self.history {
+            terminal.move_cursor(1, 2)?;
+            terminal.print("\x1b[38;5;235m")?;
+            terminal.print("─".repeat(self.width))?;
+            terminal.print("\x1b[0m")?;
+
+            for (i, entry) in vec.iter().rev().take(self.height - 2).enumerate() {
+                terminal.move_cursor(1, i + 3)?;
+                terminal.print(" ")?;
+                terminal.print(&entry)?;
+            }
+        }
+
+        terminal.move_cursor(cursor_pos, 1)?;
         terminal.flush()
     }
 
@@ -45,7 +72,7 @@ impl App for PromptApp {
                 Action::Exec(name) => {
                     let output = Command::new("hyprctl")
                         .args(["dispatch", "exec"])
-                        .arg(name)
+                        .arg(name.replace("{input}", &self.input))
                         .output();
                     if let Err(err) = output {
                         Instruction::SetApp(Box::new(MessageApp(format!("{err}").into())))
@@ -76,13 +103,26 @@ impl App for PromptApp {
                         command.stdout(stdout()).stderr(stderr());
                         Instruction::HoldOutput(command)
                     } else {
-                        let _ = command.output();
-                        Instruction::Quit
+                        let out = command.output();
+                        if let Some(vec) = &mut self.history {
+                            vec.push(
+                                match out {
+                                    Ok(out) => String::from_utf8_lossy(&out.stdout).to_string(),
+                                    Err(err) => err.to_string(),
+                                }
+                                .replace("\n", "\n\r "),
+                            );
+
+                            self.input = String::new();
+                            Instruction::None
+                        } else {
+                            Instruction::Quit
+                        }
                     }
                 }
-                Action::OpenMenu(name) => {
-                    Instruction::SetApp(super::from_config(Config::get_menu(name.to_string())))
-                }
+                Action::OpenMenu(name) => Instruction::SetApp(super::from_config(
+                    Config::get_menu(name.replace("{input}", &self.input)),
+                )),
             },
 
             Key::Backspace => {

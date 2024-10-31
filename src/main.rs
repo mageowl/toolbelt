@@ -98,16 +98,14 @@ fn main() -> io::Result<()> {
         let res = child.wait();
         let mut temp = stdout().into_raw_mode()?;
 
-        if terminal_size().unwrap().1 > 100 {
-            temp.print("\n")?;
-            let code = res.expect("failed to get exit code.");
-            if !code.success() {
-                temp.print(format!("Process exited with code {code}.\r\n"))?;
-            }
-
-            temp.print("Press any key to exit.")?;
-            temp.flush()?;
+        temp.print("\n")?;
+        let code = res.expect("failed to get exit code.");
+        if !code.success() {
+            temp.print(format!("Process exited with code {code}.\r\n"))?;
         }
+
+        temp.print("Press any key to exit.")?;
+        temp.flush()?;
 
         while let Ok(Event::Resize(_, _)) | Err(_) = receiver.recv() {}
     }

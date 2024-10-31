@@ -58,7 +58,7 @@ impl App for ListApp {
         terminal.clear()?;
         terminal.print(" ".repeat(prompt_offset))?;
         terminal.print(&self.icon)?;
-        terminal.print("  ")?;
+        terminal.print(" ")?;
 
         if self.filter.is_empty() {
             terminal.print(&self.placeholder)?;
@@ -86,7 +86,7 @@ impl App for ListApp {
             }
         }
 
-        terminal.move_cursor(prompt_offset + self.filter.len() + 4, 1)?;
+        terminal.move_cursor(prompt_offset + self.filter.len() + 3, 1)?;
 
         terminal.flush()
     }
