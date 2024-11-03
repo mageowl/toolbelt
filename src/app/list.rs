@@ -73,13 +73,13 @@ impl App for ListApp {
 
         for (i, entry) in self.list.iter().map(|i| &self.entries[*i]).enumerate() {
             terminal.move_cursor(1, i + 3)?;
-            terminal.print(" ")?;
+            terminal.print("  ")?;
 
             if i == self.selected {
                 terminal.print(&self.selected_style)?;
             }
             terminal.print(&entry.icon)?;
-            terminal.print("  ")?;
+            terminal.print(" ")?;
             terminal.print(&entry.name)?;
             if i == self.selected {
                 terminal.print(termion::style::Reset)?;

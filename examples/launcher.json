@@ -1,0 +1,57 @@
+{
+  "type": "list",
+
+  "prompt": { "text": "launch application", "dim": true },
+  "icon": { "text": "", "fg": "cyan" },
+
+  "selectedStyle": { "fg": "cyan" },
+  "entries": [
+    {
+      "name": "lock",
+      "icon": "󱅞",
+      "keywords": "slp",
+
+      "exec": "hyprlock"
+    },
+    {
+      "name": "firefox",
+      "icon": "󰈹",
+
+      "exec": "firefox"
+    },
+    {
+      "name": "neovim",
+      "icon": "",
+      "keywords": "nvim",
+
+      "exec": "kitty nvim"
+    },
+    {
+      "name": "kitty",
+      "icon": "",
+      "keywords": "term",
+
+      "exec": "kitty"
+    },
+    {
+      "name": "discord",
+      "icon": "󰊴",
+      "keywords": "dsc",
+
+      "exec": "vesktop"
+    },
+    {
+      "name": "steam",
+      "icon": "󰓓",
+
+      "exec": "steam"
+    },
+    {
+      "name": "prism launcher",
+      "icon": "󰍳",
+      "keywords": "pmc",
+
+      "exec": "prismlauncher"
+    }
+  ]
+}
