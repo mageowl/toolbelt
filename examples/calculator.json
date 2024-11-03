@@ -1,0 +1,12 @@
+{
+	"type": "prompt",
+
+	"prompt": { "text": "calculator", "dim": true },
+	"icon": { "text": "󰃬", "fg": "green" },
+
+	"history": true,
+	"command": {
+		"name": "qalc",
+		"args": ["{input}"]
+	}
+}

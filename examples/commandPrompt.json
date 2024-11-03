@@ -1,0 +1,15 @@
+{
+	"type": "prompt",
+	"windowSize": [640, 96],
+
+	"prompt": { "text": "run command", "dim": true },
+	"icon": { "text": "", "fg": "green" },
+
+	"command": {
+		"name": "fish",
+		"args": ["-c", "{input}"],
+
+		"holdOutput": true,
+		"outputSize": [640, 400]
+	}
+}
