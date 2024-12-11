@@ -71,7 +71,13 @@ impl App for ListApp {
         terminal.print("─".repeat(self.width))?;
         terminal.print("\x1b[0m")?;
 
-        for (i, entry) in self.list.iter().map(|i| &self.entries[*i]).enumerate() {
+        for (i, entry) in self
+            .list
+            .iter()
+            .map(|i| &self.entries[*i])
+            .take(self.height - 2)
+            .enumerate()
+        {
             terminal.move_cursor(1, i + 3)?;
             terminal.print("  ")?;
 
